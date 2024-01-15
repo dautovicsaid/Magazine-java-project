@@ -1,10 +1,9 @@
 package com.project.magazines;
 
 import com.project.magazines.connection.DatabaseConnection;
-import com.project.magazines.entity.Area;
 import com.project.magazines.entity.City;
 import com.project.magazines.entity.Country;
-import com.project.magazines.enumeration.Employee;
+import com.project.magazines.entity.Employee;
 import com.project.magazines.enumeration.EmployeeType;
 import com.project.magazines.service.AreaService;
 import com.project.magazines.service.CityService;

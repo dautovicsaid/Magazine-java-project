@@ -1,6 +1,7 @@
-package com.project.magazines.enumeration;
+package com.project.magazines.entity;
 
 import com.project.magazines.entity.City;
+import com.project.magazines.enumeration.EmployeeType;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
