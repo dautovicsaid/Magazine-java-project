@@ -2,6 +2,8 @@ package com.project.magazines.enumeration;
 
 import com.project.magazines.entity.City;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 
 public class Employee {
@@ -17,6 +19,24 @@ public class Employee {
     private String professionalQualificationLevel;
     private int feePerArticle;
     private City city;
+
+    public Employee(Long id, String name, String lastName, String jmbg,
+                    String address, String phoneNumber, Date birthDate,
+                    Date employmentDate, EmployeeType type, String professionalQualificationLevel,
+                    int feePerArticle, City city) {
+        this.id = id;
+        this.name = name;
+        this.lastName = lastName;
+        this.jmbg = jmbg;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+        this.birthDate = birthDate;
+        this.employmentDate = employmentDate;
+        this.type = type;
+        this.professionalQualificationLevel = professionalQualificationLevel;
+        this.feePerArticle = feePerArticle;
+        this.city = city;
+    }
 
     public Employee(Long id, String name, String lastName, String jmbg, String address,
                     String phoneNumber, Date birthDate, Date employmentDate, EmployeeType employeeType,
@@ -34,9 +54,9 @@ public class Employee {
         this.city = city;
     }
 
-    public Employee( String name, String lastName, String jmbg, String address,
-                     String phoneNumber, Date birthDate, Date employmentDate,
-                     EmployeeType employeeType, String professionalQualificationLevel, City city) {
+    public Employee(String name, String lastName, String jmbg, String address,
+                    String phoneNumber, Date birthDate, Date employmentDate,
+                    EmployeeType employeeType, String professionalQualificationLevel, City city) {
         this.name = name;
         this.lastName = lastName;
         this.jmbg = jmbg;
@@ -217,10 +237,10 @@ public class Employee {
                     "employmentDate": "%s",
                     "employeeType": "%s",
                     "professionalQualificationLevel": "%s",
-                    "feePerArticle": %d,
+                    "feePerArticle": %.2f $,
                     "city": %s
                 }
                 """.formatted(id, name, lastName, jmbg, address, phoneNumber, birthDate,
-                employmentDate, type, professionalQualificationLevel, feePerArticle, city);
+                employmentDate, type, professionalQualificationLevel, feePerArticle / 100.0, city);
     }
 }

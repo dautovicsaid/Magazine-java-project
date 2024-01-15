@@ -51,6 +51,7 @@ public class Main {
         //cityService.create(new City("Test grad 2", new Country("Ničija zemlja")));
 //        cityService.getAll("ni").forEach(System.out::println);
         //areaService.getAll().forEach(System.out::println);
+        System.out.println(employeeService.findId("1234567891234"));
         employeeService.create(new Employee(
                 "Said",
                 "Dautovic",
@@ -62,7 +63,6 @@ public class Main {
                 EmployeeType.REGULAR,
                 "Level 2",
                 new City("Novi Sad", new Country("Srbija"))));
-
-
+        System.out.println(employeeService.getAll("dsa", EmployeeType.REGULAR));
     }
 }

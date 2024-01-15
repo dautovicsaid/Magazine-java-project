@@ -206,12 +206,13 @@ public class DatabaseConnection {
         }
 
         for (Join join : joins) {
+            String targetTable = join.targetTableName() == null ? tableName : join.targetTableName();
             sql.append(" ")
                     .append(join.joinType())
                     .append(" JOIN ")
                     .append(join.joinTableName())
                     .append(" ON ")
-                    .append(tableName).append(".").append(join.sourceColumn())
+                    .append(targetTable).append(".").append(join.sourceColumn())
                     .append(" = ")
                     .append(join.joinTableName()).append(".").append(join.targetColumn());
         }

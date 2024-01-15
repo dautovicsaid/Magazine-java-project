@@ -32,6 +32,10 @@ public class CityService {
                 new Condition(LogicalOperator.OR, "country.name", "LIKE", "%" + search + "%")
         );
 
+        return getAndMapCities(conditions);
+    }
+
+    private List<City> getAndMapCities(List<Condition> conditions) {
         List<Map<String, Object>> cities = dbConnection.select("city",
                 List.of(
                         "city.*",
@@ -84,6 +88,13 @@ public class CityService {
         Long countryId = countryService.findId(city.getCountry());
 
         return countryId != -1 && dbConnection.update("city", Map.of("name", city.getName(), "country_id", countryId), id);
+    }
+
+    public City getById(Long id) {
+        if (id == null)
+            return null;
+
+        return getAndMapCities(List.of(new Condition(LogicalOperator.WHERE, "city.id", "=", id))).get(0);
     }
 
     public Long findId(City city) {
