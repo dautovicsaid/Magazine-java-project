@@ -2,9 +2,6 @@ package com.project.magazines.entity;
 
 import com.project.magazines.entity.City;
 import com.project.magazines.enumeration.EmployeeType;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.Date;
 
 public class Employee {

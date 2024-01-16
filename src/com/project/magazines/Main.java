@@ -51,7 +51,7 @@ public class Main {
 //        cityService.getAll("ni").forEach(System.out::println);
         //areaService.getAll().forEach(System.out::println);
         System.out.println(employeeService.findId("1234567891234"));
-        employeeService.create(new Employee(
+        /*employeeService.create(new Employee(
                 "Said",
                 "Dautovic",
                 "1234567891234",
@@ -61,7 +61,7 @@ public class Main {
                 Date.valueOf("2021-01-01"),
                 EmployeeType.REGULAR,
                 "Level 2",
-                new City("Novi Sad", new Country("Srbija"))));
+                new City("Novi Sad", new Country("Srbija"))));*/
         System.out.println(employeeService.getAll("dsa", EmployeeType.REGULAR));
     }
 }

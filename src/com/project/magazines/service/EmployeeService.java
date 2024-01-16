@@ -35,14 +35,18 @@ public class EmployeeService {
         return getAll(search, null);
     }
 
+
+    // TODO: Add date filter
     public List<Employee> getAll(String search, EmployeeType type) {
         List<Map<String, Object>> employees = dbConnection.select("employee",
-                List.of("employee.*", "city.name as city_name", "city.id as city_id",
-                        "country.name as country_name", "country.id as country_id"),
+                List.of("employee.*", "city.name as city_name",
+                        "country.name as country_name", "country.id as country_id", "GROUP_CONCAT(area.name) as areas"),
                 (search == null && type == null) ? null : prepareSearchFilterConditions(search, type),
                 List.of(new Join(JoinType.INNER, "city", "city_id", "id"),
-                        new Join(JoinType.INNER,"city", "country", "country_id", "id")
-                ));
+                        new Join(JoinType.INNER,"city", "country", "country_id", "id"),
+                        new Join(JoinType.LEFT, "employee_area", "employee_id", "id"),
+                        new Join(JoinType.LEFT, "employee_area", "area", "area_id", "id"))
+                );
 
         return employees.stream()
                 .map(this::mapToEmployee)

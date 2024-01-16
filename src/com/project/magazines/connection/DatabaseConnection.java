@@ -1,11 +1,14 @@
 package com.project.magazines.connection;
 
 import com.project.magazines.enumeration.LogicalOperator;
+import com.project.magazines.enumeration.QueryOptionType;
 import com.project.magazines.helper.Condition;
 import com.project.magazines.helper.Join;
+import com.project.magazines.helper.QueryOption;
 
 import java.sql.*;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DatabaseConnection {
@@ -164,9 +167,23 @@ public class DatabaseConnection {
         }
     }*/
 
-    public List<Map<String, Object>> select(String tableName, List<String> columns, List<Condition> conditions, List<Join> joins) {
+    public List<Map<String, Object>> select(String tableName, List<String> columns) {
+       return select(tableName, columns, null, null, null);
+    }
+
+    public List<Map<String, Object>> select(String tableName, List<String> columns, List<Condition> conditions) {
+        return select(tableName, columns, conditions, null, null);
+    }
+
+    public List<Map<String, Object>> select(String tableName, List<String> columns, List<Join> joins) {
+        return select(tableName, columns, null, joins, null);
+    }
+
+    public List<Map<String, Object>> select(String tableName, List<String> columns,
+                                            List<Condition> conditions, List<Join> joins,
+                                            List<QueryOption> queryOptions) {
         try (Connection connection = open()) {
-            String sql = buildSelectQuery(tableName, columns, conditions, joins);
+            String sql = buildSelectQuery(tableName, columns, conditions, joins, queryOptions);
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             setParameters(preparedStatement, conditions);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -187,12 +204,15 @@ public class DatabaseConnection {
         return sql.toString();
     }
 
-    private String buildSelectQuery(String tableName, List<String> columns, List<Condition> conditions, List<Join> joins) {
+    private String buildSelectQuery(String tableName, List<String> columns,
+                                    List<Condition> conditions, List<Join> joins,
+                                    List<QueryOption> queryOptions) {
         StringBuilder sql = new StringBuilder("SELECT ");
         appendColumns(sql, columns);
         sql.append(" FROM ").append(tableName);
         appendJoins(sql, joins, tableName);
         appendConditions(sql, conditions);
+        appendQueryOptions(sql, queryOptions);
         return sql.toString();
     }
 
@@ -227,6 +247,42 @@ public class DatabaseConnection {
             sql.append(conditions.stream()
                     .map(condition -> String.format(" %s %s %s ?", condition.logicalOperator(), condition.columnName(), condition.comparator()))
                     .collect(Collectors.joining(" ")));
+        }
+    }
+
+    private void appendQueryOptions(StringBuilder sql, List<QueryOption> queryOptions) {
+        if (queryOptions == null || queryOptions.isEmpty()) {
+            return;
+        }
+
+        validateSingleOption(queryOptions, QueryOptionType.LIMIT, "LIMIT");
+        validateSingleOption(queryOptions, QueryOptionType.OFFSET, "OFFSET");
+
+        appendOption(sql, queryOptions, QueryOptionType.GROUP_BY, "GROUP BY ", QueryOption::getColumnName);
+        appendOption(sql, queryOptions, QueryOptionType.ORDER_BY, "ORDER BY ", queryOption ->
+                queryOption.getColumnName() + " " + queryOption.getOrderByDirection());
+        appendOption(sql, queryOptions, QueryOptionType.LIMIT, "LIMIT ", queryOption ->
+                String.valueOf(queryOption.getLimitCount()));
+        appendOption(sql, queryOptions, QueryOptionType.OFFSET, "OFFSET ", queryOption ->
+                String.valueOf(queryOption.getOffsetCount()));
+    }
+
+    private void validateSingleOption(List<QueryOption> queryOptions, QueryOptionType type, String typeName) {
+        long count = queryOptions.stream().filter(queryOption -> queryOption.getType() == type).count();
+        if (count > 1) {
+            throw new RuntimeException("Only one " + typeName + " option is allowed.");
+        }
+    }
+
+    private void appendOption(StringBuilder sql, List<QueryOption> queryOptions, QueryOptionType type, String keyword,
+                              Function<QueryOption, String> mapper) {
+        String optionString = queryOptions.stream()
+                .filter(queryOption -> queryOption.getType() == type)
+                .map(mapper)
+                .collect(Collectors.joining(", ", keyword, ""));
+
+        if (!optionString.equalsIgnoreCase(keyword)) {
+            sql.append(optionString);
         }
     }
 

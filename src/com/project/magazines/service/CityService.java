@@ -63,8 +63,10 @@ public class CityService {
     }
 
     public boolean create(City city) {
-        if (city == null)
+        if (city == null){
+            System.out.println("City is null!");
             return false;
+        }
 
         if (checkIfCityExists(city)) {
             System.out.println("City with name " + city.getName() + " already exists.");
@@ -77,8 +79,10 @@ public class CityService {
     }
 
     public boolean update(City city, Long id) {
-        if (city == null)
+        if (city == null || id == null){
+            System.out.println("City or id is null!");
             return false;
+        }
 
         if (checkIfCityExists(city, id)) {
             System.out.println("City with name " + city.getName() + " already exists.");
