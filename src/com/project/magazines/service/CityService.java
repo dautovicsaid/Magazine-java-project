@@ -1,3 +1,4 @@
+/*
 package com.project.magazines.service;
 
 import com.project.magazines.connection.DatabaseConnection;
@@ -124,3 +125,4 @@ public class CityService {
         ), null);
     }
 }
+*/

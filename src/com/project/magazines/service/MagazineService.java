@@ -1,3 +1,4 @@
+/*
 import com.project.magazines.connection.DatabaseConnection;
 import com.project.magazines.entity.Magazine;
 
@@ -40,3 +41,4 @@ public class MagazineService {
 
 
 }
+*/

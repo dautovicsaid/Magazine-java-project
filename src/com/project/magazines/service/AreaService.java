@@ -4,7 +4,9 @@ import com.project.magazines.connection.DatabaseConnection;
 import com.project.magazines.entity.Area;
 import com.project.magazines.enumeration.LogicalOperator;
 import com.project.magazines.helper.Condition;
+import com.project.magazines.helper.QueryBuilder;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +18,7 @@ public class AreaService {
         this.dbConnection = dbConnection;
     }
 
+    /*
     public List<Area> getAll() {
         return getAll(null);
     }
@@ -29,7 +32,7 @@ public class AreaService {
                 .stream()
                 .map(area -> new Area((Long) area.get("id"), (String) area.get("name")))
                 .toList();
-    }
+    }*/
 
     public boolean create(Area area) {
         if (area == null) {
@@ -42,10 +45,12 @@ public class AreaService {
             return false;
         }
 
-        return dbConnection.insert("area", Map.of("name", area.getName()));
+        return dbConnection.executeQuery(QueryBuilder.query()
+                .insert("area", Map.of("name", area.getName()))
+                .toString(), Boolean.class);
     }
 
-    public boolean update(Area area, Long id) {
+  /*  public boolean update(Area area, Long id) {
         if (area == null || id == null) {
             System.out.println("Area or id is null!");
             return false;
@@ -82,18 +87,25 @@ public class AreaService {
             return -1L;
 
         return dbConnection.findSingleIdByColumn("area", "name", area.getName());
-    }
+    }*/
 
     private boolean checkIfAreaExists(Area area) {
-        return dbConnection.exists("area",
-                List.of(new Condition(LogicalOperator.WHERE, "name", "=", area.getName())),
-                null);
+        return checkIfAreaExists(area, null);
     }
 
-    private boolean checkIfAreaExists(Area area, Long id) {
-        return dbConnection.exists("area",
-                List.of(new Condition(LogicalOperator.WHERE, "name", "=", area.getName()),
-                        new Condition(LogicalOperator.AND, "id", "!=", id)),
-                null);
+    private boolean checkIfAreaExists(Area area, Long id)  {
+        if (area == null) {
+            System.out.println("Area is null!");
+            return false;
+        }
+
+        return dbConnection.executeQuery(QueryBuilder.query()
+                .exists(
+                        QueryBuilder.query()
+                                .select()
+                                .from("area")
+                                .when(id != null, query -> query.where("id", "!=", id))
+                                .where("name", area.getName()), "result")
+                .toString(), Boolean.class);
     }
 }

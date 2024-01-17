@@ -1,3 +1,4 @@
+/*
 package com.project.magazines.service;
 
 import com.project.magazines.connection.DatabaseConnection;
@@ -221,3 +222,4 @@ public class EmployeeService {
         return existingEmployeeId != -1L && !existingEmployeeId.equals(id);
     }
 }
+*/

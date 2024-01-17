@@ -42,7 +42,61 @@ public class DatabaseConnection {
         }
     }
 
-    public boolean insert(String table, Map<String, Object> parameters) {
+    public <T> T executeQuery(String query, Class<T> returnType) {
+        validateReturnType(returnType);
+
+        try (Connection connection = open();
+             Statement statement = connection.createStatement()) {
+
+            if (query.trim().toLowerCase().startsWith("select")) {
+                ResultSet resultSet = statement.executeQuery(query);
+
+                if(returnType.equals(Boolean.class)) {
+                    return returnType.cast(resultSet.getBoolean(1));
+                }
+                else {
+                    List<Map<String, Object>> resultList = resultSetToList(resultSet);
+                    return returnType.cast(resultList);
+                }
+            } else {
+                int updateCount = statement.executeUpdate(query);
+                return returnType.cast(updateCount > 0);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error executing query.");
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void validateReturnType(Class<?> returnType) {
+        if (!(returnType.equals(List.class) && returnType.getTypeParameters()[0].equals(Map.class))
+                && !returnType.equals(Boolean.class)) {
+            throw new IllegalArgumentException("Invalid return type");
+        }
+    }
+
+    private List<Map<String, Object>> resultSetToList(ResultSet resultSet) throws SQLException {
+        List<Map<String, Object>> resultList = new ArrayList<>();
+
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        while (resultSet.next()) {
+            Map<String, Object> row = new HashMap<>();
+
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnName(i);
+                Object columnValue = resultSet.getObject(i);
+                row.put(columnName, columnValue);
+            }
+
+            resultList.add(row);
+        }
+
+        return resultList;
+    }
+
+    /*public boolean insert(String table, Map<String, Object> parameters) {
         String columns = String.join(", ", parameters.keySet());
         String values = String.join(", ", Collections.nCopies(parameters.size(), "?"));
 
@@ -157,7 +211,7 @@ public class DatabaseConnection {
         }
     }
 
-  /*  public List<Map<String, Object>> select(String tableName, List<String> columns) {
+  *//*  public List<Map<String, Object>> select(String tableName, List<String> columns) {
         try (Connection connection = open()) {
             String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName;
 
@@ -165,7 +219,7 @@ public class DatabaseConnection {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }*/
+    }*//*
 
     public List<Map<String, Object>> select(String tableName, List<String> columns) {
        return select(tableName, columns, null, null, null);
@@ -329,5 +383,5 @@ public class DatabaseConnection {
         }
 
         return resultList;
-    }
+    }*/
 }

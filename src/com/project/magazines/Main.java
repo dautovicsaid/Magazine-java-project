@@ -1,14 +1,15 @@
 package com.project.magazines;
 
 import com.project.magazines.connection.DatabaseConnection;
-import com.project.magazines.entity.City;
+import com.project.magazines.entity.Area;
+/*import com.project.magazines.entity.City;
 import com.project.magazines.entity.Country;
 import com.project.magazines.entity.Employee;
-import com.project.magazines.enumeration.EmployeeType;
+import com.project.magazines.enumeration.EmployeeType;*/
 import com.project.magazines.service.AreaService;
-import com.project.magazines.service.CityService;
+/*import com.project.magazines.service.CityService;
 import com.project.magazines.service.CountryService;
-import com.project.magazines.service.EmployeeService;
+import com.project.magazines.service.EmployeeService;*/
 
 import java.sql.Date;
 
@@ -16,10 +17,11 @@ public class Main {
     public static void main(String[] args) {
         DatabaseConnection dbconn = new DatabaseConnection("root", "password", "127.0.0.1", "3306", "magazines");
 
-        CountryService countryService = new CountryService(dbconn);
+        AreaService areaService = new AreaService(dbconn);
+       /* CountryService countryService = new CountryService(dbconn);
         CityService cityService = new CityService(dbconn);
         AreaService areaService = new AreaService(dbconn);
-        EmployeeService employeeService = new EmployeeService(dbconn);
+        EmployeeService employeeService = new EmployeeService(dbconn);*/
 
         /*countryService.create(new java.com.project.magazines.entity.Country("Srbija"));
         countryService.create(new java.com.project.magazines.entity.Country("Hrvatska"));
@@ -50,7 +52,7 @@ public class Main {
         //cityService.create(new City("Test grad 2", new Country("Ničija zemlja")));
 //        cityService.getAll("ni").forEach(System.out::println);
         //areaService.getAll().forEach(System.out::println);
-        System.out.println(employeeService.findId("1234567891234"));
+        //System.out.println(employeeService.findId("1234567891234"));
         /*employeeService.create(new Employee(
                 "Said",
                 "Dautovic",
@@ -62,6 +64,8 @@ public class Main {
                 EmployeeType.REGULAR,
                 "Level 2",
                 new City("Novi Sad", new Country("Srbija"))));*/
-        System.out.println(employeeService.getAll("dsa", EmployeeType.REGULAR));
+        //System.out.println(employeeService.getAll("dsa", EmployeeType.REGULAR));
+
+        areaService.create(new Area("Elektronika"));
     }
 }
