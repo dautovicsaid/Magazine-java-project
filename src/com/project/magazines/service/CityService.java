@@ -1,14 +1,11 @@
-/*
 package com.project.magazines.service;
 
 import com.project.magazines.connection.DatabaseConnection;
 import com.project.magazines.entity.City;
 import com.project.magazines.entity.Country;
-import com.project.magazines.helper.Condition;
-import com.project.magazines.helper.Join;
-import com.project.magazines.enumeration.JoinType;
-import com.project.magazines.enumeration.LogicalOperator;
+import com.project.magazines.helper.QueryBuilder;
 
+import java.security.Key;
 import java.util.List;
 import java.util.Map;
 
@@ -28,31 +25,24 @@ public class CityService {
     }
 
     public List<City> getAll(String search) {
-        List<Condition> conditions = (search == null) ? null : List.of(
-                new Condition(LogicalOperator.WHERE, "city.name", "LIKE", "%" + search + "%"),
-                new Condition(LogicalOperator.OR, "country.name", "LIKE", "%" + search + "%")
-        );
-
-        return getAndMapCities(conditions);
-    }
-
-    private List<City> getAndMapCities(List<Condition> conditions) {
-        List<Map<String, Object>> cities = dbConnection.select("city",
-                List.of(
-                        "city.*",
-                        "country.name as country_name"),
-                conditions,
-                List.of(
-                        new Join(JoinType.INNER,
-                                "country",
-                                "country_id",
-                                "id")
-                ));
+        List<Map<String, Object>> cities = dbConnection.executeSelectQuery(
+                QueryBuilder.query()
+                        .select(
+                                "city.*",
+                                "country.id as country_id",
+                                "country.name as country_name")
+                        .from("city")
+                        .join("country", "city.country_id", "country.id")
+                        .when(search != null, query ->
+                                query.where("city.name", "LIKE", "%" + search + "%")
+                                        .orWhere("country.name", "LIKE", "%" + search + "%"))
+                        .toString());
 
         return cities.stream()
                 .map(this::mapToCity)
                 .toList();
     }
+
 
     private City mapToCity(Map<String, Object> cityData) {
         return new City(
@@ -63,66 +53,95 @@ public class CityService {
                         (String) cityData.get("country_name")));
     }
 
-    public boolean create(City city) {
-        if (city == null){
+    public boolean save(City city) {
+        if (city == null) {
             System.out.println("City is null!");
             return false;
         }
 
+        Country country = countryService.getById(city.getCountry().getId());
+
+        if (country == null) {
+            System.out.println("Country with id " + city.getCountry().getId() + " does not exist.");
+            return false;
+        }
+
         if (checkIfCityExists(city)) {
-            System.out.println("City with name " + city.getName() + " already exists.");
+            System.out.println("City already exists!");
             return false;
         }
 
-        Long countryId = countryService.findId(city.getCountry());
+        if (city.getId() == null)
+            dbConnection.executeSaveQuery(QueryBuilder.query()
+                    .insert("city", Map.of("name", city.getName(), "country_id", country.getId()))
+                    .toString());
+        else
+            dbConnection.executeSaveQuery(
+                    QueryBuilder.query()
+                            .update("city", Map.of("name", city.getName(), "country_id", country.getId()))
+                            .where("id", "=", city.getId())
+                            .toString());
 
-        return countryId != -1 && dbConnection.insert("city", Map.of("name", city.getName(), "country_id", countryId));
-    }
-
-    public boolean update(City city, Long id) {
-        if (city == null || id == null){
-            System.out.println("City or id is null!");
-            return false;
-        }
-
-        if (checkIfCityExists(city, id)) {
-            System.out.println("City with name " + city.getName() + " already exists.");
-            return false;
-        }
-
-        Long countryId = countryService.findId(city.getCountry());
-
-        return countryId != -1 && dbConnection.update("city", Map.of("name", city.getName(), "country_id", countryId), id);
+        return true;
     }
 
     public City getById(Long id) {
         if (id == null)
             return null;
 
-        return getAndMapCities(List.of(new Condition(LogicalOperator.WHERE, "city.id", "=", id))).get(0);
+        Map<String, Object> result =
+                dbConnection.executeFindByIdQuery(
+                        QueryBuilder.query()
+                                .select(
+                                        "city.*",
+                                        "country.id as country_id",
+                                        "country.name as country_name")
+                                .from("city")
+                                .join("country", "city.country_id", "country.id")
+                                .where("city.id", "=", id)
+                                .toString());
+
+        return result.isEmpty() ? null : mapToCity(result);
     }
 
     public Long findId(City city) {
         if (city == null)
             return -1L;
 
-        return dbConnection.findSingleIdByColumn("city", "name", city.getName());
+        return dbConnection.executeFindIdQuery(
+                QueryBuilder.query()
+                        .select("id")
+                        .from("city")
+                        .where("name", "=", city.getName())
+                        .where("country_id", "=", countryService.findId(city.getCountry()))
+                        .toString());
+    }
+
+    public boolean delete(Long id) {
+        if (id == null)
+            return false;
+
+        dbConnection.executeDeleteQuery(
+                QueryBuilder.query()
+                        .delete("city")
+                        .where("id", "=", id)
+                        .toString());
+
+        return true;
     }
 
     private boolean checkIfCityExists(City city) {
-        return dbConnection.exists("city", List.of(
-                new Condition(LogicalOperator.WHERE, "name", "=", city.getName()),
-                new Condition(LogicalOperator.AND, "country_id", "=", countryService.findId(city.getCountry()))
-        ), null);
-    }
-
-    private boolean checkIfCityExists(City city, Long id) {
-        return dbConnection.exists("city", List.of(
-                new Condition(LogicalOperator.WHERE, "name", "=", city.getName()),
-                new Condition(LogicalOperator.AND, "country_id", "=", countryService.findId(city.getCountry())),
-                new Condition(LogicalOperator.AND, "id", "!=", id)
-
-        ), null);
+        return city != null && dbConnection.executeExistsQuery(
+                QueryBuilder.query()
+                        .exists(
+                                QueryBuilder.query()
+                                        .select()
+                                        .from("city")
+                                        .where("name", "=", city.getName())
+                                        .where("country_id", "=", city.getCountry().getId())
+                                        .when(city.getId() != null,
+                                                query -> query.where("id", "<>", city.getId()))
+                                , "result")
+                        .toString());
     }
 }
-*/

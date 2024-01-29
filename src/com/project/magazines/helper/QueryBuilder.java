@@ -51,8 +51,13 @@ public class QueryBuilder {
 
         this.query.append("UPDATE ").append(table).append(" SET ");
         for (Map.Entry<String, Object> entry : values.entrySet()) {
-            this.query.append(entry.getKey()).append(" = ").append(entry.getValue()).append(", ");
+            this.query.append(entry.getKey())
+                    .append(" = ")
+                    .append(entry.getValue() instanceof String ? "'" + entry.getValue() + "'" : entry.getValue())
+                    .append(", ");
         }
+
+        this.query.deleteCharAt(this.query.length() - 2);
         return this;
     }
 
@@ -73,7 +78,10 @@ public class QueryBuilder {
         this.query.append(") VALUES (");
 
         for (Map.Entry<String, Object> entry : values.entrySet()) {
-            this.query.append(entry.getValue()).append(", ");
+            if (entry.getValue() instanceof String)
+                this.query.append("'").append(entry.getValue()).append("', ");
+            else
+                this.query.append(entry.getValue()).append(", ");
         }
 
         this.query.deleteCharAt(this.query.length() - 2);
@@ -98,24 +106,30 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder join(String table, String condition) {
-        this.query.append("INNER JOIN ").append(table).append(" ON ").append(condition).append(" ");
+    public QueryBuilder join(String table, String firstColumn, String secondColumn) {
+        return innerJoin(table, firstColumn, secondColumn);
+    }
+
+    private QueryBuilder join(String joinType, String table, String firstColumn, String secondColumn) {
+        this.query.append(joinType).append(" JOIN ").append(table).append(" ON ")
+                .append(firstColumn).append(" = ").append(secondColumn).append(" ");
         return this;
     }
 
-    public QueryBuilder leftJoin(String table, String condition) {
-        this.query.append("LEFT JOIN ").append(table).append(" ON ").append(condition).append(" ");
-        return this;
+    public QueryBuilder innerJoin(String table, String firstColumn, String secondColumn) {
+        return join("INNER", table, firstColumn, secondColumn);
     }
 
-    public QueryBuilder rightJoin(String table, String condition) {
-        this.query.append("RIGHT JOIN ").append(table).append(" ON ").append(condition).append(" ");
-        return this;
+    public QueryBuilder leftJoin(String table, String firstColumn, String secondColumn) {
+        return join("LEFT", table, firstColumn, secondColumn);
     }
 
-    public QueryBuilder fullJoin(String table, String condition) {
-        this.query.append("FULL JOIN ").append(table).append(" ON ").append(condition).append(" ");
-        return this;
+    public QueryBuilder rightJoin(String table, String firstColumn, String secondColumn) {
+        return join("RIGHT", table, firstColumn, secondColumn);
+    }
+
+    public QueryBuilder fullJoin(String table, String firstColumn, String secondColumn) {
+        return join("FULL", table, firstColumn, secondColumn);
     }
 
     public QueryBuilder where(String condition, Object value) {
@@ -123,7 +137,7 @@ public class QueryBuilder {
     }
 
     public QueryBuilder where(String condition, String parameter, Object value) {
-        if (!parameters.contains(parameter))
+        if (!parameters.contains(parameter.toLowerCase()))
             throw new IllegalArgumentException("Invalid parameter");
 
         if (this.query.toString().contains("WHERE")) {
@@ -148,27 +162,35 @@ public class QueryBuilder {
     }
 
     public QueryBuilder where(Function<QueryBuilder, QueryBuilder> function) {
-        if (this.query.toString().contains("WHERE")) {
-            this.query.append("AND (").append(function.apply(this)).append(") ");
-        } else {
-            this.query.append("WHERE (").append(function.apply(this)).append(") ");
+        String condition = function.apply(new QueryBuilder()).toString();
+
+        if (!condition.isEmpty()) {
+            if (this.query.toString().contains("WHERE")) {
+                this.query.append(" AND (").append(condition).append(") ");
+            } else {
+                this.query.append("WHERE (").append(condition).append(") ");
+            }
         }
 
         return this;
     }
 
-    public QueryBuilder orWhere(String condition, String parameter, String value) {
+    public QueryBuilder orWhere(String condition, String parameter, Object value) {
         if (this.query.toString().contains("WHERE")) {
             this.query.append("OR ")
                     .append(condition)
+                    .append(" ")
                     .append(parameter)
-                    .append(value)
+                    .append(" ")
+                    .append(value instanceof String ? "'" + value + "'" : value)
                     .append(" ");
         } else {
             this.query.append("WHERE ")
                     .append(condition)
+                    .append(" ")
                     .append(parameter)
-                    .append(value)
+                    .append(" ")
+                    .append(value instanceof String ? "'" + value + "'" : value)
                     .append(" ");
         }
 
