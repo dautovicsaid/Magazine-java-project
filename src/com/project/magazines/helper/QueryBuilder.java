@@ -41,6 +41,14 @@ public class QueryBuilder {
         return this;
     }
 
+    public QueryBuilder count(String column) {
+        if (!this.query.toString().isEmpty())
+            throw new IllegalArgumentException("Can't add count to existing query");
+
+        this.query.append("SELECT COUNT(").append(column).append(") as ").append("count").append(" ");
+        return this;
+    }
+
     public QueryBuilder update(String table, Map<String, Object> values) {
         if (values.isEmpty())
             throw new IllegalArgumentException("Values can't be empty");
@@ -140,6 +148,16 @@ public class QueryBuilder {
         if (!parameters.contains(parameter.toLowerCase()))
             throw new IllegalArgumentException("Invalid parameter");
 
+        if (this.query.toString().endsWith("(")) {
+            this.query.append(condition)
+                    .append(" ")
+                    .append(parameter)
+                    .append(" ")
+                    .append(value instanceof String ? "'" + value + "'" : value)
+                    .append(" ");
+            return this;
+        }
+
         if (this.query.toString().contains("WHERE")) {
             this.query.append("AND ")
                     .append(condition)
@@ -156,6 +174,48 @@ public class QueryBuilder {
                     .append(" ")
                     .append(value instanceof String ? "'" + value + "'" : value)
                     .append(" ");
+        }
+
+        return this;
+    }
+
+    public QueryBuilder whereIn(String condition, List<Object> values) {
+        if (this.query.toString().endsWith("(")) {
+            this.query.append(condition)
+                    .append(" IN (").append(String.join(", ",
+                            values.stream().map(value -> value instanceof String
+                                            ? "'" + value + "'" :
+                                            value.toString())
+                                    .toList()))
+                    .append(") ");
+            return this;
+        }
+
+        if (this.query.toString().contains("WHERE")) {
+            this.query.append("AND ")
+                    .append(condition)
+                    .append(" IN (")
+                    .append(String.join(", ",
+                            values.stream().map(value -> value instanceof String
+                                            ? "'" + value + "'" :
+                                            value.toString())
+                                    .toList()))
+                    .append(") ");
+        } else {
+            this.query.append("WHERE ")
+                    .append(condition)
+                    .append(" IN (");
+
+            String valuesString = String.join(", ",
+                    values.stream().map(value -> value instanceof String
+                                    ? "'" + value + "'" :
+                                    value.toString())
+                            .toList());
+            // remove first and last character to valuesstring
+            valuesString = valuesString.substring(1, valuesString.length() - 1);
+
+            this.query.append(valuesString)
+                    .append(") ");
         }
 
         return this;
@@ -256,9 +316,7 @@ public class QueryBuilder {
     }
 
     public String toString() {
-        String query = this.query.toString();
-        this.query = new StringBuilder();
-        return query;
+        return this.query.toString();
     }
 
 

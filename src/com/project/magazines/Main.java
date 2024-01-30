@@ -1,12 +1,17 @@
 package com.project.magazines;
 
 import com.project.magazines.connection.DatabaseConnection;
+import com.project.magazines.dto.EmployeeDto;
+import com.project.magazines.dto.SimpleEmployeeDto;
 import com.project.magazines.entity.Area;
 import com.project.magazines.entity.City;
 import com.project.magazines.entity.Country;
+import com.project.magazines.entity.Employee;
+import com.project.magazines.enumeration.EmployeeType;
 import com.project.magazines.service.AreaService;
 import com.project.magazines.service.CountryService;
 import com.project.magazines.service.CityService;
+import com.project.magazines.service.EmployeeService;
 
 
 import java.sql.Date;
@@ -21,6 +26,7 @@ public class Main {
     private static final CountryService countryService = new CountryService(dbconn);
     private static final AreaService areaService = new AreaService(dbconn);
     private static final CityService cityService = new CityService(dbconn);
+    private static final EmployeeService employeeService = new EmployeeService(dbconn);
 
     public static void main(String[] args) {
 
@@ -85,13 +91,14 @@ public class Main {
 
     private static void generalMenu() {
         System.out.println("""
-                +----------------------------+
+                +-----------------------------+
                 | Please select the table:    |
-                +----------------------------+
+                +-----------------------------+
                 | 1. Country                  |
                 | 2. City                     |
                 | 3. Area                     |
-                +----------------------------+
+                | 4. Employee                 |
+                +-----------------------------+
                 """);
 
         int result = scanner.nextInt();
@@ -99,8 +106,227 @@ public class Main {
             case 1 -> countryMenu();
             case 2 -> cityMenu();
             case 3 -> areaMenu();
+            case 4 -> employeeMenu();
             default -> System.out.println("Invalid input!");
         }
+    }
+
+    private static void employeeMenu() {
+        System.out.println("""
+                +--------------------------+
+                | Please select operation: |
+                +--------------------------+
+                | 1. Create                |
+                | 2. Update                |
+                | 3. Delete                |
+                | 4. Read one              |
+                | 5. Read all              |
+                | 6. Go back               |
+                +--------------------------+
+                """);
+
+        int result = scanner.nextInt();
+        switch (result) {
+            case 1 -> createEmployee();
+            case 2 -> updateEmployee();
+            case 3 -> deleteEmployee();
+            case 4 -> readEmployee();
+            case 5 -> readAllEmployee();
+            case 6 -> generalMenu();
+            default -> System.out.println("Invalid input!");
+        }
+    }
+
+    private static void readAllEmployee() {
+        displaySimpleEmployees(employeeService.getAll());
+        employeeMenu();
+    }
+
+    private static void readEmployee() {
+
+        displaySimpleEmployees(employeeService.getAll());
+        System.out.println("Enter the id of the employee you want to read:");
+        Long id = scanner.nextLong();
+        EmployeeDto employee = employeeService.getById(id);
+        if (employee == null) {
+            System.out.println("Employee with id " + id + " does not exist!");
+            employeeMenu();
+            return;
+        }
+
+        displayEmployeeDetails(employee);
+        employeeMenu();
+    }
+
+    private static void deleteEmployee() {
+
+    }
+
+    private static void updateEmployee() {
+
+    }
+
+    private static void createEmployee() {
+        System.out.println("Enter the JMBG of the employee:");
+        scanner.nextLine();
+        String jmbg = scanner.nextLine();
+        if (employeeService.findId(jmbg) != -1) {
+            System.out.println("Employee with JMBG " + jmbg + " already exists!");
+            employeeMenu();
+            return;
+        }
+
+        System.out.println("""
+                +--------------------------+
+                | Please select operation: |
+                +--------------------------+
+                | 1. Editor                |
+                | 2. Regular               |
+                | 3. Part-time             |
+                +--------------------------+
+                """);
+
+        int result = scanner.nextInt();
+        switch (result) {
+            case 1 -> createEditor(jmbg);
+            case 2 -> createRegular(jmbg);
+            case 3 -> createPartTime(jmbg);
+            default -> System.out.println("Invalid input!");
+        }
+    }
+
+    private static void createPartTime(String jmbg) {
+        System.out.println("Enter the name of the employee:");
+        scanner.nextLine();
+        String name = scanner.nextLine();
+        System.out.println("Enter the last name of the employee:");
+        String lastName = scanner.nextLine();
+        System.out.println("Enter the address of the employee:");
+        String address = scanner.nextLine();
+        System.out.println("Enter the phone number of the employee:");
+        String phoneNumber = scanner.nextLine();
+        System.out.println("Enter the birth date of the employee (yyyy-mm-dd):");
+        Date birthDate = Date.valueOf(scanner.nextLine());
+        System.out.println("Enter the fee per article of the employee (in cents): ");
+        Integer feePerArticle = scanner.nextInt();
+        displayCities(cityService.getAll());
+        System.out.println("Enter the id of the city:");
+        Long cityId = scanner.nextLong();
+        City city = cityService.getById(cityId);
+        if (city == null) {
+            System.out.println("City with id " + cityId + " does not exist!");
+            employeeMenu();
+            return;
+        }
+
+        if (employeeService.save(new Employee(
+                name,
+                lastName,
+                jmbg,
+                address,
+                phoneNumber,
+                birthDate,
+                EmployeeType.PART_TIME,
+                feePerArticle,
+                city)))
+            System.out.println("Employee successfully created!");
+
+        employeeMenu();
+    }
+
+    private static void createRegular(String jmbg) {
+        System.out.println("Enter the name of the employee:");
+        scanner.nextLine();
+        String name = scanner.nextLine();
+        System.out.println("Enter the last name of the employee:");
+        String lastName = scanner.nextLine();
+        System.out.println("Enter the address of the employee:");
+        String address = scanner.nextLine();
+        System.out.println("Enter the phone number of the employee:");
+        String phoneNumber = scanner.nextLine();
+        System.out.println("Enter the birth date of the employee (yyyy-mm-dd):");
+        Date birthDate = Date.valueOf(scanner.nextLine());
+        System.out.println("Enter the employment date of the employee (yyyy-mm-dd):");
+        Date employmentDate = Date.valueOf(scanner.nextLine());
+        System.out.println("Enter the professional qualification level of the employee:");
+        String pql = scanner.nextLine();
+
+        System.out.println("Please select the area of the employee:");
+
+        displayCities(cityService.getAll());
+        System.out.println("Enter the id of the city:");
+        Long cityId = scanner.nextLong();
+        City city = cityService.getById(cityId);
+        if (city == null) {
+            System.out.println("City with id " + cityId + " does not exist!");
+            employeeMenu();
+            return;
+        }
+
+        displayAreas(areaService.getAll());
+        System.out.println("Enter the id of the area:");
+        Long areaId = scanner.nextLong();
+
+        if (employeeService.save(new Employee(
+                name,
+                lastName,
+                jmbg,
+                address,
+                phoneNumber,
+                birthDate,
+                employmentDate,
+                EmployeeType.REGULAR,
+                pql,
+                city), areaId))
+            System.out.println("Employee successfully created!");
+
+        employeeMenu();
+    }
+
+    private static void createEditor(String jmbg) {
+        System.out.println("Enter the name of the employee:");
+        scanner.nextLine();
+        String name = scanner.nextLine();
+        System.out.println("Enter the last name of the employee:");
+        String lastName = scanner.nextLine();
+        System.out.println("Enter the address of the employee:");
+        String address = scanner.nextLine();
+        System.out.println("Enter the phone number of the employee:");
+        String phoneNumber = scanner.nextLine();
+        System.out.println("Enter the birth date of the employee (yyyy-mm-dd):");
+        Date birthDate = Date.valueOf(scanner.nextLine());
+        System.out.println("Enter the employment date of the employee (yyyy-mm-dd):");
+        Date employmentDate = Date.valueOf(scanner.nextLine());
+
+
+        displayCities(cityService.getAll());
+        System.out.println("Enter the id of the city:");
+        Long cityId = scanner.nextLong();
+        City city = cityService.getById(cityId);
+        if (city == null) {
+            System.out.println("City with id " + cityId + " does not exist!");
+            employeeMenu();
+            return;
+        }
+
+        displayAreas(areaService.getAll());
+        System.out.println("Enter the ids of the area separated by comma:");
+        scanner.nextLine();
+        List<Long> areaIds = List.of(scanner.nextLine().split(",")).stream().map(Long::parseLong).toList();
+
+        if (employeeService.save(new Employee(
+                name,
+                lastName,
+                jmbg,
+                address,
+                phoneNumber,
+                birthDate,
+                employmentDate,
+                EmployeeType.EDITOR,
+                city), areaIds))
+            System.out.println("Employee successfully created!");
+
+        employeeMenu();
     }
 
     private static void areaMenu() {
@@ -313,7 +539,7 @@ public class Main {
         cityMenu();
     }
 
-    private static void  updateCityCountry(City city) {
+    private static void updateCityCountry(City city) {
         displayCountries(countryService.getAll());
         System.out.println("Enter the id of the country:");
         Long countryId = scanner.nextLong();
@@ -523,5 +749,58 @@ public class Main {
             System.out.printf("| %-5d | %-20s | %-25s |\n", city.getId(), city.getName(), city.getCountry().getName());
             System.out.println("+" + "-".repeat(58) + "+");
         }
+    }
+
+    private static void displaySimpleEmployees(List<SimpleEmployeeDto> employees) {
+        if (employees == null || employees.isEmpty()) {
+            System.out.println("No properties found!");
+            return;
+        }
+
+        System.out.println("+" + "-".repeat(185) + "+");
+        System.out.printf("| %-5s | %-30s | %-15s | %-10s | %-30s | %-20s | %-32s | %-20s |\n",
+                "ID", "Name", "JMBG", "Type", "Areas", "Employment Date", "Professional Qualification Level", "Fee Per Article");
+        System.out.println("+" + "-".repeat(185) + "+");
+
+        for (SimpleEmployeeDto employee : employees) {
+            System.out.printf("| %-5d | %-30s | %-15s | %-10s | %-30s | %-20s | %-32s | %-20s |\n",
+                    employee.id(), employee.name(), employee.jmbg(), employee.type(),
+                    employee.areaNames(),
+                    employee.employmentDate(),
+                    employee.pql(),
+                    employee.feePerArticle() == null ? "null" : employee.feePerArticle() / 100.0);
+            System.out.println("+" + "-".repeat(185) + "+");
+        }
+    }
+
+    public static void displayEmployeeDetails(EmployeeDto employee) {
+        if (employee == null) {
+            System.out.println("Employee not found!");
+            return;
+        }
+
+        String[] columnNames = {"ID", "NAME", "LAST NAME", "JMBG", "ADDRESS", "PHONE NUMBER", "BIRTH DATE",
+                "EMPLOYMENT DATE", "TYPE", "PROFESSIONAL QUALIFICATION LEVEL", "FEE PER ARTICLE (Cents)",
+                "CITY NAME", "COUNTRY NAME", "AREA NAMES"};
+
+
+        String[] values = {String.valueOf(employee.id()), employee.name(), employee.lastName(), employee.jmbg(),
+                employee.address(), employee.phoneNumber(),
+                String.valueOf(employee.birthDate()), String.valueOf(employee.employmentDate()),
+                String.valueOf(employee.type()), employee.professionalQualificationLevel(),
+                String.valueOf(employee.feePerArticle()), employee.cityName(), employee.countryName(),
+                employee.areaNames()};
+
+        int columnWidth = 40;
+
+        printHorizontalLine(41 * 2 + 3);
+        for (int i = 0; i < columnNames.length; i++) {
+            System.out.printf("| %-" + columnWidth + "s | %-" + columnWidth + "s |\n", columnNames[i], values[i] == null ? "" : values[i]);
+            printHorizontalLine(41 * 2 + 3);
+        }
+    }
+
+    private static void printHorizontalLine(int width) {
+        System.out.println("+" + "-".repeat(width) + "+");
     }
 }

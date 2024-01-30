@@ -104,6 +104,20 @@ public class DatabaseConnection {
         }
     }
 
+    public Long executeCountQuery(String query) {
+        if (query == null || !query.trim().toLowerCase().startsWith("select count("))
+            throw new IllegalArgumentException("Invalid query type");
+
+        try (Connection connection = open(); Statement statement = connection.createStatement()) {
+            try (ResultSet resultSet = statement.executeQuery(query)) {
+                return resultSet.next() ? resultSet.getLong("count") : -1L;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error executing COUNT query.");
+            throw new RuntimeException(e);
+        }
+    }
+
     public Map<String, Object> executeFindByIdQuery(String query) {
         if (!query.trim().toLowerCase().startsWith("select"))
             throw new IllegalArgumentException("Invalid query type");

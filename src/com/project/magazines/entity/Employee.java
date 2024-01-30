@@ -15,13 +15,13 @@ public class Employee {
     private Date employmentDate;
     private EmployeeType type;
     private String professionalQualificationLevel;
-    private int feePerArticle;
+    private Integer feePerArticle;
     private City city;
 
     public Employee(Long id, String name, String lastName, String jmbg,
                     String address, String phoneNumber, Date birthDate,
                     Date employmentDate, EmployeeType type, String professionalQualificationLevel,
-                    int feePerArticle, City city) {
+                    Integer feePerArticle, City city) {
         this.id = id;
         this.name = name;
         this.lastName = lastName;
@@ -98,7 +98,7 @@ public class Employee {
 
     public Employee(Long id, String name, String lastName, String jmbg, String address,
                     String phoneNumber, Date birthDate, EmployeeType employeeType,
-                    int feePerArticle, City city) {
+                    Integer feePerArticle, City city) {
         this.id = id;
         this.name = name;
         this.lastName = lastName;
@@ -113,7 +113,7 @@ public class Employee {
 
     public Employee(String name, String lastName, String jmbg, String address,
                     String phoneNumber, Date birthDate, EmployeeType employeeType,
-                    int feePerArticle, City city) {
+                    Integer feePerArticle, City city) {
         this.name = name;
         this.lastName = lastName;
         this.jmbg = jmbg;
@@ -205,11 +205,11 @@ public class Employee {
         this.professionalQualificationLevel = professionalQualificationLevel;
     }
 
-    public int getFeePerArticle() {
+    public Integer getFeePerArticle() {
         return feePerArticle;
     }
 
-    public void setFeePerArticle(int feePerArticle) {
+    public void setFeePerArticle(Integer feePerArticle) {
         this.feePerArticle = feePerArticle;
     }
 
