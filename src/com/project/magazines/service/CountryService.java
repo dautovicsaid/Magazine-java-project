@@ -2,8 +2,6 @@ package com.project.magazines.service;
 
 import com.project.magazines.connection.DatabaseConnection;
 import com.project.magazines.entity.Country;
-import com.project.magazines.helper.Condition;
-import com.project.magazines.enumeration.LogicalOperator;
 import com.project.magazines.helper.QueryBuilder;
 
 import java.util.Collections;
@@ -12,10 +10,10 @@ import java.util.Map;
 
 public class CountryService {
 
-    private final DatabaseConnection databaseConnection;
+    private final DatabaseConnection dbConnection;
 
     public CountryService(DatabaseConnection databaseConnection) {
-        this.databaseConnection = databaseConnection;
+        this.dbConnection = databaseConnection;
     }
 
     public List<Country> getAll() {
@@ -23,7 +21,7 @@ public class CountryService {
     }
 
     public List<Country> getAll(String search) {
-        List<Map<String, Object>> countries = databaseConnection.executeSelectQuery(
+        List<Map<String, Object>> countries = dbConnection.executeSelectQuery(
                 QueryBuilder.query()
                         .select()
                         .from("country")
@@ -53,12 +51,12 @@ public class CountryService {
         }
 
         if (country.getId() == null)
-            databaseConnection.executeSaveQuery(
+            dbConnection.executeSaveQuery(
                     QueryBuilder.query()
                             .insert("country", Map.of("name", country.getName()))
                             .toString());
         else
-            databaseConnection.executeSaveQuery(
+            dbConnection.executeSaveQuery(
                     QueryBuilder.query()
                             .update("country", Map.of("name", country.getName()))
                             .where("id", "=", country.getId())
@@ -71,7 +69,7 @@ public class CountryService {
         if (id == null)
             return null;
 
-        Map<String, Object> result = databaseConnection.executeFindByIdQuery(
+        Map<String, Object> result = dbConnection.executeFindByIdQuery(
                 QueryBuilder.query()
                         .select()
                         .from("country")
@@ -85,7 +83,7 @@ public class CountryService {
         if (id == null)
             return false;
 
-        if (databaseConnection.executeExistsQuery(
+        if (dbConnection.executeExistsQuery(
                 QueryBuilder.query().exists(
                                 QueryBuilder.query()
                                         .select()
@@ -95,7 +93,7 @@ public class CountryService {
             System.out.println("Cannot delete country with id " + id + " because it has cities associated with it.");
             return false;
         }
-        databaseConnection.executeDeleteQuery(
+        dbConnection.executeDeleteQuery(
                 QueryBuilder.query()
                         .delete("country")
                         .where("id", "=", id)
@@ -108,7 +106,7 @@ public class CountryService {
         if (country == null)
             return -1L;
 
-        return databaseConnection.executeFindIdQuery(
+        return dbConnection.executeFindIdQuery(
                 QueryBuilder.query()
                         .select("id")
                         .from("country")
@@ -117,7 +115,7 @@ public class CountryService {
     }
 
     public Map<String, Object> getCountryWithHighestNumberOfCities() {
-        List<Map<String, Object>> result = databaseConnection.executeSelectQuery(QueryBuilder
+        List<Map<String, Object>> result = dbConnection.executeSelectQuery(QueryBuilder
                 .query()
                 .select("country.id", "country.name", "COUNT(city.id) AS cities_count")
                 .from("country")
@@ -130,7 +128,7 @@ public class CountryService {
     }
 
     private boolean checkIfCountryExists(Country country, Long id) {
-        return databaseConnection.executeExistsQuery(
+        return dbConnection.executeExistsQuery(
                 QueryBuilder.query()
                         .exists(
                                 QueryBuilder.query()

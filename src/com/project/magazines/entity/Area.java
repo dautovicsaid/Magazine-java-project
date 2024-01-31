@@ -31,9 +31,10 @@ public class Area {
 
     @Override
     public String toString() {
-        return String.format("{" +
-                "\n  \"id\": %d," +
-                "\n  \"name\": \"%s\"" +
-                "\n}", id, name);
+        return String.format("""
+                {
+                  "id": %d,
+                  "name": "%s"
+                }""", id, name);
     }
 }

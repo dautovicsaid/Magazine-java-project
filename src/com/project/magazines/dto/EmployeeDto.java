@@ -1,6 +1,5 @@
 package com.project.magazines.dto;
 
-import com.project.magazines.entity.City;
 import com.project.magazines.enumeration.EmployeeType;
 
 import java.sql.Date;

@@ -10,6 +10,7 @@ public record SimpleEmployeeDto(
         String jmbg,
         EmployeeType type,
         String areaNames,
+        String cityAndCountry,
         Date employmentDate,
         String pql,
         Integer feePerArticle) {

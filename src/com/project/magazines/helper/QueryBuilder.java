@@ -3,10 +3,11 @@ package com.project.magazines.helper;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class QueryBuilder {
 
-    private StringBuilder query;
+    private final StringBuilder query;
 
 
     private final List<String> parameters = List.of("=", "<", ">", "<=", ">=", "<>", "like", "not like");
@@ -50,49 +51,57 @@ public class QueryBuilder {
     }
 
     public QueryBuilder update(String table, Map<String, Object> values) {
-        if (values.isEmpty())
+        if (table == null || table.isBlank()) {
+            throw new IllegalArgumentException("Table can't be null or blank");
+        }
+
+        if (values.isEmpty()) {
             throw new IllegalArgumentException("Values can't be empty");
+        }
 
-        if (!this.query.toString().isEmpty())
-            throw new IllegalArgumentException("Can't add update to existing query");
-
+        if (!this.query.toString().isEmpty()) {
+            throw new IllegalArgumentException("Can't add UPDATE to an existing query");
+        }
 
         this.query.append("UPDATE ").append(table).append(" SET ");
-        for (Map.Entry<String, Object> entry : values.entrySet()) {
-            this.query.append(entry.getKey())
-                    .append(" = ")
-                    .append(entry.getValue() instanceof String ? "'" + entry.getValue() + "'" : entry.getValue())
-                    .append(", ");
-        }
+
+        values.forEach((key, value) -> this.query.append(key)
+                .append(" = ")
+                .append(value instanceof String ? "'" + value + "'" : value)
+                .append(", "));
 
         this.query.deleteCharAt(this.query.length() - 2);
         return this;
     }
 
     public QueryBuilder insert(String table, Map<String, Object> values) {
-        if (values.isEmpty())
-            throw new IllegalArgumentException("Values can't be empty");
+        if (table == null || table.isBlank())
+            throw new IllegalArgumentException("Table can't be null or blank");
 
-        if (!this.query.toString().isEmpty())
-            throw new IllegalArgumentException("Can't add insert to existing query");
+        if (values.isEmpty()) {
+            throw new IllegalArgumentException("Values can't be empty");
+        }
+
+        if (!this.query.toString().isEmpty()) {
+            throw new IllegalArgumentException("Can't add INSERT to an existing query");
+        }
 
         this.query.append("INSERT INTO ").append(table).append(" (");
 
-        for (Map.Entry<String, Object> entry : values.entrySet()) {
-            this.query.append(entry.getKey()).append(", ");
-        }
+        values.keySet().forEach(key -> this.query.append(key).append(", "));
+        this.query.delete(this.query.length() - 2, this.query.length());
 
-        this.query.deleteCharAt(this.query.length() - 2);
         this.query.append(") VALUES (");
 
-        for (Map.Entry<String, Object> entry : values.entrySet()) {
-            if (entry.getValue() instanceof String)
-                this.query.append("'").append(entry.getValue()).append("', ");
-            else
-                this.query.append(entry.getValue()).append(", ");
-        }
+        values.values().forEach(value -> {
+            if (value instanceof String) {
+                this.query.append("'").append(value).append("', ");
+            } else {
+                this.query.append(value).append(", ");
+            }
+        });
+        this.query.delete(this.query.length() - 2, this.query.length());
 
-        this.query.deleteCharAt(this.query.length() - 2);
         this.query.append(") ");
 
         return this;
@@ -111,6 +120,14 @@ public class QueryBuilder {
             throw new IllegalArgumentException("Can't add from to existing query");
 
         this.query.append("FROM ").append(table).append(" ");
+        return this;
+    }
+
+    public QueryBuilder from(QueryBuilder query, String alias) {
+        if (!this.query.toString().startsWith("SELECT") || this.query.toString().contains("FROM"))
+            throw new IllegalArgumentException("Can't add from to existing query");
+
+        this.query.append("FROM (").append(query).append(") ").append("as ").append(alias).append(" ");
         return this;
     }
 
@@ -145,77 +162,18 @@ public class QueryBuilder {
     }
 
     public QueryBuilder where(String condition, String parameter, Object value) {
-        if (!parameters.contains(parameter.toLowerCase()))
+        if (!parameters.contains(parameter.toLowerCase())) {
             throw new IllegalArgumentException("Invalid parameter");
+        }
 
         if (this.query.toString().endsWith("(")) {
-            this.query.append(condition)
-                    .append(" ")
-                    .append(parameter)
-                    .append(" ")
-                    .append(value instanceof String ? "'" + value + "'" : value)
-                    .append(" ");
-            return this;
-        }
-
-        if (this.query.toString().contains("WHERE")) {
-            this.query.append("AND ")
-                    .append(condition)
-                    .append(" ")
-                    .append(parameter)
-                    .append(" ")
-                    .append(value instanceof String ? "'" + value + "'" : value)
-                    .append(" ");
+            appendCondition(condition, parameter, value);
+        } else if (this.query.toString().contains("WHERE")) {
+            this.query.append("AND ");
+            appendCondition(condition, parameter, value);
         } else {
-            this.query.append("WHERE ")
-                    .append(condition)
-                    .append(" ")
-                    .append(parameter)
-                    .append(" ")
-                    .append(value instanceof String ? "'" + value + "'" : value)
-                    .append(" ");
-        }
-
-        return this;
-    }
-
-    public QueryBuilder whereIn(String condition, List<Object> values) {
-        if (this.query.toString().endsWith("(")) {
-            this.query.append(condition)
-                    .append(" IN (").append(String.join(", ",
-                            values.stream().map(value -> value instanceof String
-                                            ? "'" + value + "'" :
-                                            value.toString())
-                                    .toList()))
-                    .append(") ");
-            return this;
-        }
-
-        if (this.query.toString().contains("WHERE")) {
-            this.query.append("AND ")
-                    .append(condition)
-                    .append(" IN (")
-                    .append(String.join(", ",
-                            values.stream().map(value -> value instanceof String
-                                            ? "'" + value + "'" :
-                                            value.toString())
-                                    .toList()))
-                    .append(") ");
-        } else {
-            this.query.append("WHERE ")
-                    .append(condition)
-                    .append(" IN (");
-
-            String valuesString = String.join(", ",
-                    values.stream().map(value -> value instanceof String
-                                    ? "'" + value + "'" :
-                                    value.toString())
-                            .toList());
-            // remove first and last character to valuesstring
-            valuesString = valuesString.substring(1, valuesString.length() - 1);
-
-            this.query.append(valuesString)
-                    .append(") ");
+            this.query.append("WHERE ");
+            appendCondition(condition, parameter, value);
         }
 
         return this;
@@ -226,35 +184,64 @@ public class QueryBuilder {
 
         if (!condition.isEmpty()) {
             if (this.query.toString().contains("WHERE")) {
-                this.query.append(" AND (").append(condition).append(") ");
+                this.query.append(" AND (");
             } else {
-                this.query.append("WHERE (").append(condition).append(") ");
+                this.query.append("WHERE (");
             }
+            function.apply(this);
+            this.query.append(") ");
         }
 
         return this;
     }
 
-    public QueryBuilder orWhere(String condition, String parameter, Object value) {
-        if (this.query.toString().contains("WHERE")) {
-            this.query.append("OR ")
-                    .append(condition)
-                    .append(" ")
-                    .append(parameter)
-                    .append(" ")
-                    .append(value instanceof String ? "'" + value + "'" : value)
-                    .append(" ");
+    public QueryBuilder whereIn(String condition, List<Object> values) {
+        String valuesString = values.stream()
+                .map(value -> value instanceof String
+                        ? "'" + value + "'"
+                        : value instanceof QueryBuilder ? "(" + value + ")" : value.toString())
+                .collect(Collectors.joining(", "));
+
+        if (this.query.toString().endsWith("(")) {
+            appendCondition(condition, "IN (" + valuesString + ")");
+        } else if (this.query.toString().contains("WHERE")) {
+            this.query.append("AND ");
+            appendCondition(condition, "IN (" + valuesString + ")");
         } else {
-            this.query.append("WHERE ")
-                    .append(condition)
-                    .append(" ")
-                    .append(parameter)
-                    .append(" ")
-                    .append(value instanceof String ? "'" + value + "'" : value)
-                    .append(" ");
+            this.query.append("WHERE ");
+            appendCondition(condition, "IN (" + valuesString + ")");
         }
 
+        this.query.deleteCharAt(this.query.lastIndexOf("["));
+        this.query.deleteCharAt(this.query.lastIndexOf("]"));
+
         return this;
+    }
+
+    private void appendCondition(String condition, String valuesClause) {
+        this.query.append(condition).append(" ").append(valuesClause).append(" ");
+    }
+
+    public QueryBuilder orWhere(String condition, String parameter, Object value) {
+        if (this.query.toString().contains("WHERE")) {
+            this.query.append("OR ");
+        } else {
+            this.query.append("WHERE ");
+        }
+
+        appendCondition(condition, parameter, value);
+
+        return this;
+    }
+
+    private void appendCondition(String condition, String parameter, Object value) {
+        this.query.append(condition)
+                .append(" ")
+                .append(parameter)
+                .append(" ")
+                .append(value instanceof String ? "'" + value + "'" :
+                        value instanceof QueryBuilder ? "(" + value + ")" : value)
+                .append(" ");
     }
 
     public QueryBuilder orWhere(Function<QueryBuilder, QueryBuilder> function) {
@@ -286,13 +273,91 @@ public class QueryBuilder {
     }
 
     public QueryBuilder limit(int limit) {
-        if (this.query.toString().contains("LIMIT"))
-            throw new IllegalArgumentException("Limit already exists");
+        if (this.query.toString().contains("LIMIT") || this.query.toString().contains("OFFSET"))
+            throw new IllegalArgumentException("Limit already exists or offset exists");
 
         if (limit < 0)
             throw new IllegalArgumentException("Limit must be greater than 0");
 
         this.query.append("LIMIT ").append(limit).append(" ");
+        return this;
+    }
+
+    public QueryBuilder having(String condition, Object value) {
+        return having(condition, "=", value);
+    }
+
+    public QueryBuilder having(String condition, String parameter, Object value) {
+        if (!parameters.contains(parameter.toLowerCase())) {
+            throw new IllegalArgumentException("Invalid parameter");
+        }
+
+        if (this.query.toString().contains("ORDER BY")
+                || this.query.toString().contains("LIMIT")
+                || this.query.toString().contains("OFFSET")) {
+            throw new IllegalArgumentException("Can't add HAVING after ORDER BY, LIMIT, or OFFSET");
+        }
+
+        if (this.query.toString().endsWith("(")) {
+            appendCondition(condition, parameter, value);
+        } else if (!this.query.toString().contains("HAVING")) {
+            this.query.append("HAVING ");
+            appendCondition(condition, parameter, value);
+        } else {
+            this.query.append("AND ");
+            appendCondition(condition, parameter, value);
+        }
+
+        return this;
+    }
+
+    public QueryBuilder orHaving(String condition, String parameter, Object value) {
+        if (this.query.toString().contains("ORDER BY")
+                || this.query.toString().contains("LIMIT")
+                || this.query.toString().contains("OFFSET")) {
+            throw new IllegalArgumentException("Can't add HAVING after ORDER BY, LIMIT, or OFFSET");
+        }
+
+        if (this.query.toString().endsWith("(")) {
+            appendCondition(condition, parameter, value);
+        } else if (!this.query.toString().contains("HAVING")) {
+            this.query.append("HAVING ");
+            appendCondition(condition, parameter, value);
+        } else {
+            this.query.append("OR ");
+            appendCondition(condition, parameter, value);
+        }
+
+        return this;
+    }
+
+    public QueryBuilder orHaving(Function<QueryBuilder, QueryBuilder> function) {
+        if (this.query.toString().contains("ORDER BY")
+                || this.query.toString().contains("LIMIT")
+                || this.query.toString().contains("OFFSET")) {
+            throw new IllegalArgumentException("Can't add HAVING after ORDER BY, LIMIT, or OFFSET");
+        }
+
+        if (this.query.toString().contains("HAVING")) {
+            this.query.append("OR (").append(function.apply(this)).append(") ");
+        } else {
+            this.query.append("HAVING (").append(function.apply(this)).append(") ");
+        }
+
+        return this;
+    }
+
+    public QueryBuilder having(Function<QueryBuilder, QueryBuilder> function) {
+        String condition = function.apply(new QueryBuilder()).toString();
+
+        if (!condition.isEmpty()) {
+            if (this.query.toString().contains("HAVING")) {
+                this.query.append(" AND (").append(condition).append(") ");
+            } else {
+                this.query.append("HAVING (").append(condition).append(") ");
+            }
+        }
+
         return this;
     }
 
@@ -318,6 +383,4 @@ public class QueryBuilder {
     public String toString() {
         return this.query.toString();
     }
-
-
 }

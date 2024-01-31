@@ -5,7 +5,6 @@ import com.project.magazines.entity.City;
 import com.project.magazines.entity.Country;
 import com.project.magazines.helper.QueryBuilder;
 
-import java.security.Key;
 import java.util.List;
 import java.util.Map;
 
@@ -118,8 +117,34 @@ public class CityService {
     }
 
     public boolean delete(Long id) {
-        if (id == null)
+        if (id == null) {
+            System.out.println("Id is null!");
             return false;
+        }
+
+        if (dbConnection.executeExistsQuery(
+                QueryBuilder.query()
+                        .exists(
+                                QueryBuilder.query()
+                                        .select()
+                                        .from("employee")
+                                        .where("city_id", "=", id)
+                                , "result")
+                        .toString())) {
+            System.out.println("Cannot delete city with id " + id + " because it is used by an employee.");
+        }
+
+        if (dbConnection.executeExistsQuery(
+                QueryBuilder.query()
+                        .exists(
+                                QueryBuilder.query()
+                                        .select()
+                                        .from("salestore")
+                                        .where("city_id", "=", id)
+                                , "result")
+                        .toString())) {
+            System.out.println("Cannot delete city with id " + id + " because it is used by a salestore.");
+        }
 
         dbConnection.executeDeleteQuery(
                 QueryBuilder.query()

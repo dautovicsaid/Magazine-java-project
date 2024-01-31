@@ -6,6 +6,7 @@ import com.project.magazines.dto.EmployeeDto;
 import com.project.magazines.dto.SimpleEmployeeDto;
 import com.project.magazines.entity.Area;
 import com.project.magazines.entity.City;
+import com.project.magazines.entity.Country;
 import com.project.magazines.entity.Employee;
 import com.project.magazines.enumeration.EmployeeType;
 import com.project.magazines.helper.QueryBuilder;
@@ -59,60 +60,22 @@ public class EmployeeService {
                         .leftJoin("employee_area", "employee.id", "employee_area.employee_id")
                         .leftJoin("area", "employee_area.area_id", "area.id")
                         .when(type != null, query -> query.where("employee.type", "=", type.name()))
+                        .groupBy("employee.id", "employee.name", "employee.last_name", "employee.jmbg", "employee.type", "employee.employment_date", "employee.professional_qualification_level", "employee.fee_per_article", "city.name", "country.name")
                         .when(search != null, query ->
-                                query.where(q ->
-                                        q.where("CONCAT(employee.name, ' ', employee.last_name)", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.jmbg", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.address", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.phone_number", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.employment_date", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.professional_qualification_level", "LIKE", "%" + search + "%")
-                                                .orWhere("employee.fee_per_article", "LIKE", "%" + search + "%")
-                                                .orWhere("city.name", "LIKE", "%" + search + "%")
-                                                .orWhere("country.name", "LIKE", "%" + search + "%"))
-                        ).groupBy("employee.id", "employee.name", "employee.last_name", "employee.jmbg", "employee.type", "employee.employment_date", "employee.professional_qualification_level", "employee.fee_per_article", "city.name", "country.name")
+                                query.having("CONCAT(employee.name, ' ', employee.last_name)", "LIKE", "%" + search + "%")
+                                        .orHaving("employee.jmbg", "LIKE", "%" + search + "%")
+                                        .orHaving("employee.employment_date", "LIKE", "%" + search + "%")
+                                        .orHaving("employee.professional_qualification_level", "LIKE", "%" + search + "%")
+                                        .orHaving("employee.fee_per_article", "LIKE", "%" + search + "%")
+                                        .orHaving("city.name", "LIKE", "%" + search + "%")
+                                        .orHaving("country.name", "LIKE", "%" + search + "%")
+                        .orHaving("areas", "LIKE", "%" + search + "%"))
                         .toString());
 
         return employees.stream()
                 .map(this::mapToSimpleEmployee)
                 .toList();
     }
-
-    /*private List<Condition> prepareSearchFilterConditions(String search, EmployeeType type) {
-        if (search == null && type != null)
-            return List.of(getFilterByTypeCondition(type, LogicalOperator.WHERE));
-
-        List<Condition> conditions = new ArrayList<>(List.of(
-                new Condition(LogicalOperator.WHERE, "employee.name", "LIKE", "%" + search + "%")
-        ));
-
-        List.of("employee.last_name", "employee.jmbg", "employee.address", "employee.phone_number")
-                .forEach(field -> addSearchCondition(conditions, search, field));
-
-
-        if (type != null) {
-            conditions.add(getFilterByTypeCondition(type, LogicalOperator.OR));
-
-            switch (type) {
-                case EDITOR -> addSearchCondition(conditions, search, "employee.employment_date");
-                case REGULAR -> {
-                    addSearchCondition(conditions, search, "employee.employment_date");
-                    addSearchCondition(conditions, search, "employee.professional_qualification_level");
-                }
-                case PART_TIME -> addSearchCondition(conditions, search, "employee.fee_per_article");
-            }
-        }
-
-        return conditions;
-    }*/
-
-   /* private Condition getFilterByTypeCondition(EmployeeType type, LogicalOperator operator) {
-        return new Condition(operator, "employee.type", "=", type.name());
-    }
-
-    private void addSearchCondition(List<Condition> conditions, String search, String field) {
-        conditions.add(new Condition(LogicalOperator.OR, field, "LIKE", "%" + search + "%"));
-    }*/
 
     private SimpleEmployeeDto mapToSimpleEmployee(Map<String, Object> employeeData) {
         return new SimpleEmployeeDto(
@@ -121,6 +84,7 @@ public class EmployeeService {
                 (String) employeeData.get("jmbg"),
                 EmployeeType.valueOf((String) employeeData.get("type")),
                 (String) employeeData.get("areas"),
+                employeeData.get("city_name") + ", " + employeeData.get("country_name"),
                 (Date) employeeData.get("employment_date"),
                 (String) employeeData.get("professional_qualification_level"),
                 (Integer) employeeData.get("fee_per_article")
@@ -128,7 +92,25 @@ public class EmployeeService {
 
     }
 
-    private EmployeeDto mapToEmployee(Map<String, Object> employeeData) {
+    private Employee mapToEmployee(Map<String, Object> employeeData) {
+        return new Employee(
+                (Long) employeeData.get("id"),
+                (String) employeeData.get("name"),
+                (String) employeeData.get("last_name"),
+                (String) employeeData.get("jmbg"),
+                (String) employeeData.get("address"),
+                (String) employeeData.get("phone_number"),
+                (java.sql.Date) employeeData.get("birth_date"),
+                (java.sql.Date) employeeData.get("employment_date"),
+                EmployeeType.valueOf((String) employeeData.get("type")),
+                (String) employeeData.get("professional_qualification_level"),
+                (Integer) employeeData.get("fee_per_article"),
+                new City((Long) employeeData.get("city_id"), (String) employeeData.get("city_name"),
+                        new Country((Long) employeeData.get("country_id"),
+                                (String) employeeData.get("country_name"))));
+    }
+
+    private EmployeeDto mapToEmployeeDto(Map<String, Object> employeeData) {
         return new EmployeeDto(
                 (Long) employeeData.get("id"),
                 (String) employeeData.get("name"),
@@ -198,6 +180,11 @@ public class EmployeeService {
             return false;
         }
 
+        if (employee.getId() == null && (areaIds == null || areaIds.isEmpty())) {
+            System.out.println("Employee must have at least one area.");
+            return false;
+        }
+
         Long existingAreasCount = dbConnection.executeCountQuery(
                 QueryBuilder.query()
                         .count("id")
@@ -242,22 +229,23 @@ public class EmployeeService {
                     .toString()));
 
         } else {
-            // TODO : Update employee areas
-           /* dbConnection.executeSaveQuery(QueryBuilder.query()
+            dbConnection.executeSaveQuery(QueryBuilder.query()
                     .update("employee", data)
                     .where("id", "=", employee.getId())
                     .toString());
 
-            dbConnection.executeDeleteQuery(QueryBuilder.query()
-                    .delete("employee_area")
-                    .where("employee_id", "=", employee.getId())
-                    .toString());
+            if (!areaIds.isEmpty()) {
+                dbConnection.executeDeleteQuery(QueryBuilder.query()
+                        .delete("employee_area")
+                        .where("employee_id", "=", employee.getId())
+                        .toString());
 
-            dbConnection.executeSaveQuery(QueryBuilder.query()
-                    .insert("employee_area", Map.of(
-                            "employee_id", employee.getId(),
-                            "area_id", areaId))
-                    .toString());*/
+                areaIds.forEach(areaId -> dbConnection.executeSaveQuery(QueryBuilder.query()
+                        .insert("employee_area", Map.of(
+                                "employee_id", employee.getId(),
+                                "area_id", areaId))
+                        .toString()));
+            }
         }
 
         return true;
@@ -332,15 +320,31 @@ public class EmployeeService {
         return true;
     }
 
-    public EmployeeDto getById(Long id) {
+    public Employee getById(Long id) {
+        if (id == null)
+            return null;
+
+        Map<String, Object> result = getSingleEmployeeData(id);
+
+        return result.isEmpty() ? null : mapToEmployee(result);
+    }
+
+    public EmployeeDto getDtoById(Long id) {
         if (id == null) {
             return null;
         }
 
-        Map<String, Object> result = dbConnection.executeFindByIdQuery(
+        Map<String, Object> result = getSingleEmployeeData(id);
+
+        return result.isEmpty() ? null : mapToEmployeeDto(result);
+    }
+
+    private Map<String, Object> getSingleEmployeeData(Long id) {
+        return dbConnection.executeFindByIdQuery(
                 QueryBuilder.query()
                         .select("employee.*",
                                 "city.name as city_name",
+                                "city.country_id as country_id",
                                 "country.name as country_name",
                                 "GROUP_CONCAT(area.name) as areas")
                         .from("employee")
@@ -350,14 +354,27 @@ public class EmployeeService {
                         .leftJoin("area", "employee_area.area_id", "area.id")
                         .where("employee.id", "=", id)
                         .toString());
-
-        return result.isEmpty() ? null : mapToEmployee(result);
     }
 
 
     public boolean delete(Long id) {
-        if (id == null)
+        if (id == null) {
+            System.out.println("Id is null!");
             return false;
+        }
+
+        if (dbConnection.executeExistsQuery(
+                QueryBuilder.query()
+                        .exists(
+                                QueryBuilder.query()
+                                        .select()
+                                        .from("revision")
+                                        .where("employee_id", "=", id)
+                                , "result")
+                        .toString())) {
+            System.out.println("Cannot delete employee with id " + id + " because he has revisions.");
+            return false;
+        }
 
         dbConnection.executeDeleteQuery(
                 QueryBuilder.query()
@@ -384,6 +401,40 @@ public class EmployeeService {
                         .from("employee")
                         .where("jmbg", "=", jmbg)
                         .toString());
+    }
+
+    public List<SimpleEmployeeDto> employeesWithMoreThanAverageNumberOfAreas() {
+
+        List<Map<String, Object>> employees = dbConnection.executeSelectQuery(
+                QueryBuilder.query()
+                        .select("employee.name",
+                                "employee.last_name",
+                                "employee.jmbg",
+                                "employee.type",
+                                "employee.employment_date",
+                                "employee.professional_qualification_level",
+                                "employee.fee_per_article",
+                                "employee.id",
+                                "city.name as city_name",
+                                "country.name as country_name",
+                                "GROUP_CONCAT(area.name) as areas")
+                        .from("employee")
+                        .join("city", "employee.city_id", "city.id")
+                        .join("country", "city.country_id", "country.id")
+                        .join("employee_area", "employee.id", "employee_area.employee_id")
+                        .join("area", "employee_area.area_id", "area.id")
+                        .groupBy("employee.id", "employee.name", "employee.last_name", "employee.jmbg", "employee.type", "employee.employment_date", "employee.professional_qualification_level", "employee.fee_per_article", "city.name", "country.name")
+                        .having("COUNT(employee_area.area_id)", ">=", QueryBuilder.query()
+                                .select("AVG(area_count)")
+                                .from(QueryBuilder.query()
+                                        .select("COUNT(employee_area.area_id) as area_count")
+                                        .from("employee_area")
+                                        .groupBy("employee_area.employee_id"), "subquery"))
+                        .toString());
+
+        return employees.stream()
+                .map(this::mapToSimpleEmployee)
+                .toList();
     }
 
     private Map<String, Object> prepareEmployeeData(Employee employee, City city) {
@@ -419,8 +470,9 @@ public class EmployeeService {
                         QueryBuilder.query()
                                 .select()
                                 .from("employee")
-                                .where("jmbg", "=", employee.getJmbg()), "result")
-                .when(employee.getId() != null, query -> query.where("id", "<>", employee.getId()))
+                                .where("jmbg", "=", employee.getJmbg())
+                                .when(employee.getId() != null, query -> query.where("id", "<>", employee.getId()))
+                        , "result")
                 .toString());
     }
 }

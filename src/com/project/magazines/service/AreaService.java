@@ -4,7 +4,6 @@ import com.project.magazines.connection.DatabaseConnection;
 import com.project.magazines.entity.Area;
 import com.project.magazines.helper.QueryBuilder;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -76,7 +75,23 @@ public class AreaService {
     }
 
     public boolean delete(Long id) {
-        if (id != null) dbConnection.executeDeleteQuery(
+        if (id == null) {
+            System.out.println("Id is null!");
+            return false;
+        }
+
+        if (dbConnection.executeExistsQuery(
+                QueryBuilder.query()
+                        .exists(QueryBuilder.query()
+                                        .select()
+                                        .from("employee_area")
+                                        .where("area_id", "=", id), "result")
+                        .toString())) {
+            System.out.println("Area is associated with an employee!");
+            return false;
+        }
+
+        dbConnection.executeDeleteQuery(
                 QueryBuilder.query()
                         .delete("area")
                         .where("id", "=", id)

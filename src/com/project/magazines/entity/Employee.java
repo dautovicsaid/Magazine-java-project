@@ -1,6 +1,5 @@
 package com.project.magazines.entity;
 
-import com.project.magazines.entity.City;
 import com.project.magazines.enumeration.EmployeeType;
 import java.sql.Date;
 
@@ -36,22 +35,6 @@ public class Employee {
         this.city = city;
     }
 
-    public Employee(Long id, String name, String lastName, String jmbg, String address,
-                    String phoneNumber, Date birthDate, Date employmentDate, EmployeeType employeeType,
-                    String professionalQualificationLevel, City city) {
-        this.id = id;
-        this.name = name;
-        this.lastName = lastName;
-        this.jmbg = jmbg;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.birthDate = birthDate;
-        this.employmentDate = employmentDate;
-        this.type = employeeType;
-        this.professionalQualificationLevel = professionalQualificationLevel;
-        this.city = city;
-    }
-
     public Employee(String name, String lastName, String jmbg, String address,
                     String phoneNumber, Date birthDate, Date employmentDate,
                     EmployeeType employeeType, String professionalQualificationLevel, City city) {
@@ -67,21 +50,6 @@ public class Employee {
         this.city = city;
     }
 
-    public Employee(Long id, String name, String lastName, String jmbg, String address,
-                    String phoneNumber, Date birthDate, Date employmentDate,
-                    EmployeeType employeeType, City city) {
-        this.id = id;
-        this.name = name;
-        this.lastName = lastName;
-        this.jmbg = jmbg;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.birthDate = birthDate;
-        this.employmentDate = employmentDate;
-        this.type = employeeType;
-        this.city = city;
-    }
-
     public Employee(String name, String lastName, String jmbg, String address,
                     String phoneNumber, Date birthDate, Date employmentDate,
                     EmployeeType employeeType, City city) {
@@ -93,21 +61,6 @@ public class Employee {
         this.birthDate = birthDate;
         this.employmentDate = employmentDate;
         this.type = employeeType;
-        this.city = city;
-    }
-
-    public Employee(Long id, String name, String lastName, String jmbg, String address,
-                    String phoneNumber, Date birthDate, EmployeeType employeeType,
-                    Integer feePerArticle, City city) {
-        this.id = id;
-        this.name = name;
-        this.lastName = lastName;
-        this.jmbg = jmbg;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.birthDate = birthDate;
-        this.type = employeeType;
-        this.feePerArticle = feePerArticle;
         this.city = city;
     }
 

@@ -15,9 +15,12 @@ import com.project.magazines.service.EmployeeService;
 
 
 import java.sql.Date;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
 
@@ -29,63 +32,6 @@ public class Main {
     private static final EmployeeService employeeService = new EmployeeService(dbconn);
 
     public static void main(String[] args) {
-
-
-        /*
-        AreaService areaService = new AreaService(dbconn);
-        EmployeeService employeeService = new EmployeeService(dbconn);*/
-
-        /*countryService.create(new java.com.project.magazines.entity.Country("Srbija"));
-        countryService.create(new java.com.project.magazines.entity.Country("Hrvatska"));
-        countryService.create(new java.com.project.magazines.entity.Country("Bosna i Hercegovina"));
-        countryService.create(new java.com.project.magazines.entity.Country("Crna Gora"));
-        countryService.update(new java.com.project.magazines.entity.Country("Srbija"), countryService.findId(new java.com.project.magazines.entity.Country("Srbijaa")));
-        countryService.create(new java.com.project.magazines.entity.Country("Test drzava"));
-        cityService.create(new City("Beograd", new java.com.project.magazines.entity.Country("Srbija")));
-        cityService.create(new City("Novi Sad", new java.com.project.magazines.entity.Country("Srbija")));
-        cityService.create(new City("Niš", new java.com.project.magazines.entity.Country("Srbija")));
-        countryService.delete(countryService.findId(new Country("Test drzava")));
-        countryService.delete(countryService.findId(new Country("Srbija")));
-
-         */
-
-        /*countryService.create(new Country("Srbija"));
-        countryService.update(new Country("Srbija"), countryService.findId(new Country("Srbija")));
-
-        areaService.create(new Area("Sport"));
-        areaService.create(new Area("Svijet"));
-        areaService.create(new Area("Lifestyle"));
-        areaService.create(new Area("Kultura"));
-        areaService.create(new Area("Zabava"));
-        areaService.create(new Area("Politika"));
-        areaService.create(new Area("Ekonomija"));
-        areaService.create(new Area("Hronika"));*/
-        //countryService.getAll("na").forEach(System.out::println);
-        //cityService.create(new City("Test grad 2", new Country("Ničija zemlja")));
-//        cityService.getAll("ni").forEach(System.out::println);
-        //areaService.getAll().forEach(System.out::println);
-        //System.out.println(employeeService.findId("1234567891234"));
-        /*employeeService.create(new Employee(
-                "Said",
-                "Dautovic",
-                "1234567891234",
-                "Adresa 1",
-                "061111111",
-                Date.valueOf("1999-01-01"),
-                Date.valueOf("2021-01-01"),
-                EmployeeType.REGULAR,
-                "Level 2",
-                new City("Novi Sad", new Country("Srbija"))));*/
-        //System.out.println(employeeService.getAll("dsa", EmployeeType.REGULAR));
-
-        /*areaService.save(new Area("Elektronika"));
-        System.out.println(areaService.getAll());
-        System.out.println("=".repeat(50));
-        System.out.println(areaService.getAll("ik"));*/
-        /*System.out.println(cityService.getAll());
-        System.out.println("=".repeat(50));
-        System.out.println(cityService.getAll("ni"));*/
-        //countryService.save(new Country(countryService.findId(new Country("Srbija 2")), "Srbija"));
         generalMenu();
     }
 
@@ -121,7 +67,9 @@ public class Main {
                 | 3. Delete                |
                 | 4. Read one              |
                 | 5. Read all              |
-                | 6. Go back               |
+                | 6. Employees with more   |
+                | areas than average       |
+                | 7. Go back               |
                 +--------------------------+
                 """);
 
@@ -132,13 +80,65 @@ public class Main {
             case 3 -> deleteEmployee();
             case 4 -> readEmployee();
             case 5 -> readAllEmployee();
-            case 6 -> generalMenu();
+            case 6 -> employeesWithMoreThanAverageNumberOfAreas();
+            case 7 -> generalMenu();
             default -> System.out.println("Invalid input!");
         }
     }
 
+    private static void employeesWithMoreThanAverageNumberOfAreas() {
+        List<SimpleEmployeeDto> employees = employeeService.employeesWithMoreThanAverageNumberOfAreas();
+        displaySimpleEmployees(employees);
+        employeeMenu();
+    }
+
     private static void readAllEmployee() {
-        displaySimpleEmployees(employeeService.getAll());
+        System.out.println("Do you want to insert search term? (y/n)");
+        scanner.nextLine();
+
+        String search;
+        String decision = scanner.nextLine();
+
+        if (decision.equals("y") || decision.equals("Y")) {
+            System.out.println("Enter the search term:");
+            search = scanner.nextLine();
+        } else if (decision.equals("n") || decision.equals("N")) {
+            search = null;
+        } else {
+            System.out.println("Invalid input!");
+            readAllEmployee();
+            return;
+        }
+
+        System.out.println("Do you want to insert employee type? (y/n)");
+
+        decision = scanner.nextLine();
+
+        if (decision.equals("y") || decision.equals("Y")) {
+            System.out.println("""
+                    +--------------------------+
+                    | Please select operation: |
+                    +--------------------------+
+                    | 1. Editor                |
+                    | 2. Regular               |
+                    | 3. Part-time             |
+                    +--------------------------+
+                    """);
+
+            int result = scanner.nextInt();
+            switch (result) {
+                case 1 -> displaySimpleEmployees(employeeService.getAll(search, EmployeeType.EDITOR));
+                case 2 -> displaySimpleEmployees(employeeService.getAll(search, EmployeeType.REGULAR));
+                case 3 -> displaySimpleEmployees(employeeService.getAll(search, EmployeeType.PART_TIME));
+                default -> System.out.println("Invalid input!");
+            }
+        } else if (decision.equals("n") || decision.equals("N")) {
+            displaySimpleEmployees(employeeService.getAll(search));
+        } else {
+            System.out.println("Invalid input!");
+            readAllEmployee();
+        }
+
         employeeMenu();
     }
 
@@ -147,7 +147,7 @@ public class Main {
         displaySimpleEmployees(employeeService.getAll());
         System.out.println("Enter the id of the employee you want to read:");
         Long id = scanner.nextLong();
-        EmployeeDto employee = employeeService.getById(id);
+        EmployeeDto employee = employeeService.getDtoById(id);
         if (employee == null) {
             System.out.println("Employee with id " + id + " does not exist!");
             employeeMenu();
@@ -163,7 +163,139 @@ public class Main {
     }
 
     private static void updateEmployee() {
+        displaySimpleEmployees(employeeService.getAll());
+        System.out.println("Enter the id of the employee you want to update:");
+        scanner.nextLine();
+        Long id = scanner.nextLong();
+        Employee employee = employeeService.getById(id);
 
+        if (employee == null) {
+            System.out.println("Employee with id " + id + " does not exist!");
+            employeeMenu();
+            return;
+        }
+
+        scanner.nextLine();
+        updateField("name", () -> {
+            System.out.println("Enter the new name of the employee:");
+            employee.setName(scanner.nextLine());
+        });
+
+        updateField("last name", () -> {
+            System.out.println("Enter the new last name of the employee:");
+            employee.setLastName(scanner.nextLine());
+        });
+
+        updateField("address", () -> {
+            System.out.println("Enter the new address of the employee:");
+            employee.setAddress(scanner.nextLine());
+        });
+
+        updateField("phone number", () -> {
+            System.out.println("Enter the new phone number of the employee:");
+            employee.setPhoneNumber(scanner.nextLine());
+        });
+
+        updateField("birth date", () -> {
+            System.out.println("Enter the new birth date of the employee (yyyy-mm-dd):");
+            employee.setBirthDate(Date.valueOf(scanner.nextLine()));
+        });
+
+        updateField("city", () -> {
+            displayCities(cityService.getAll());
+            System.out.println("Enter the id of the city:");
+            Long cityId = scanner.nextLong();
+            City city = cityService.getById(cityId);
+            if (city == null) {
+                System.out.println("City with id " + cityId + " does not exist!");
+                employeeMenu();
+                return;
+            }
+            employee.setCity(city);
+        });
+
+        switch (employee.getType()) {
+            case EDITOR -> {
+                updateField("employment date", () -> {
+                    scanner.nextLine();
+                    System.out.println("Enter the new employment date of the employee (yyyy-mm-dd):");
+                    employee.setEmploymentDate(Date.valueOf(scanner.nextLine()));
+                });
+
+                updateField("areas", () -> {
+                    System.out.println("All areas from the employee will be deleted! Do you want to continue? (y/n)");
+                    handleUpdateAreas(employee);
+                });
+            }
+            case PART_TIME -> updateField("fee per article", () -> {
+                System.out.println("Enter the new fee per article of the employee (in cents):");
+                employee.setFeePerArticle(scanner.nextInt());
+
+                if (employeeService.save(employee))
+                    System.out.println("Employee successfully updated!");
+            });
+            case REGULAR -> {
+                updateField("employment date", () -> {
+                    System.out.println("Enter the new employment date of the employee (yyyy-mm-dd):");
+                    employee.setEmploymentDate(Date.valueOf(scanner.nextLine()));
+                });
+
+                updateField("professional qualification level", () -> {
+                    System.out.println("Enter the new professional qualification level of the employee:");
+                    employee.setProfessionalQualificationLevel(scanner.nextLine());
+                });
+
+                updateField("area", () -> {
+                    displayAreas(areaService.getAll());
+                    System.out.println("Enter the id of the area:");
+                    Long areaId = scanner.nextLong();
+                    Area area = areaService.getById(areaId);
+                    if (area == null) {
+                        System.out.println("Area with id " + areaId + " does not exist!");
+                        employeeMenu();
+                        return;
+                    }
+
+                    if(employeeService.save(employee, areaId))
+                        System.out.println("Employee successfully updated!");
+                });
+            }
+        }
+
+        employeeMenu();
+    }
+
+    private static void updateField(String fieldName, Runnable updateAction) {
+        System.out.println("Do you want to update " + fieldName + "? (y/n)");
+        switch (scanner.nextLine()) {
+            case "y", "Y" -> updateAction.run();
+            case "n", "N" -> {  }
+            default -> {
+                System.out.println("Invalid input!");
+                updateEmployee();
+            }
+        }
+    }
+
+    private static void handleUpdateAreas(Employee employee) {
+        switch (scanner.nextLine()) {
+            case "y", "Y" -> {
+                displayAreas(areaService.getAll());
+                System.out.println("Enter the ids of the area separated by comma:");
+                List<Long> areaIds = Arrays.stream(scanner.nextLine().split(","))
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList());
+                employeeService.save(employee, areaIds);
+            }
+            case "n", "N" -> {  }
+            default -> {
+                System.out.println("Invalid input!");
+                updateEmployee();
+            }
+        }
+
+        if (employeeService.save(employee))
+            System.out.println("Employee successfully updated!");
     }
 
     private static void createEmployee() {
@@ -251,8 +383,6 @@ public class Main {
         System.out.println("Enter the professional qualification level of the employee:");
         String pql = scanner.nextLine();
 
-        System.out.println("Please select the area of the employee:");
-
         displayCities(cityService.getAll());
         System.out.println("Enter the id of the city:");
         Long cityId = scanner.nextLong();
@@ -312,7 +442,7 @@ public class Main {
         displayAreas(areaService.getAll());
         System.out.println("Enter the ids of the area separated by comma:");
         scanner.nextLine();
-        List<Long> areaIds = List.of(scanner.nextLine().split(",")).stream().map(Long::parseLong).toList();
+        List<Long> areaIds = Stream.of(scanner.nextLine().split(",")).map(Long::parseLong).toList();
 
         if (employeeService.save(new Employee(
                 name,
@@ -676,8 +806,8 @@ public class Main {
             return;
         }
         System.out.println("Enter the new name of the country:");
-        String newName = scanner.nextLine();
         scanner.nextLine();
+        String newName = scanner.nextLine();
         country.setName(newName);
         if (countryService.save(country))
             System.out.println("Country successfully updated!");
@@ -753,23 +883,24 @@ public class Main {
 
     private static void displaySimpleEmployees(List<SimpleEmployeeDto> employees) {
         if (employees == null || employees.isEmpty()) {
-            System.out.println("No properties found!");
+            System.out.println("No employees found!");
             return;
         }
 
-        System.out.println("+" + "-".repeat(185) + "+");
-        System.out.printf("| %-5s | %-30s | %-15s | %-10s | %-30s | %-20s | %-32s | %-20s |\n",
-                "ID", "Name", "JMBG", "Type", "Areas", "Employment Date", "Professional Qualification Level", "Fee Per Article");
-        System.out.println("+" + "-".repeat(185) + "+");
+        System.out.println("+" + "-".repeat(208) + "+");
+        System.out.printf("| %-5s | %-30s | %-15s | %-10s | %-30s | %-20s | %-20s | %-32s | %-20s |\n",
+                "ID", "Name", "JMBG", "Type", "Areas", "City and Country", "Employment Date", "Professional Qualification Level", "Fee Per Article");
+        System.out.println("+" + "-".repeat(208) + "+");
 
         for (SimpleEmployeeDto employee : employees) {
-            System.out.printf("| %-5d | %-30s | %-15s | %-10s | %-30s | %-20s | %-32s | %-20s |\n",
+            System.out.printf("| %-5d | %-30s | %-15s | %-10s | %-30s | %-20s | %-20s | %-32s | %-20s |\n",
                     employee.id(), employee.name(), employee.jmbg(), employee.type(),
                     employee.areaNames(),
+                    employee.cityAndCountry(),
                     employee.employmentDate(),
                     employee.pql(),
                     employee.feePerArticle() == null ? "null" : employee.feePerArticle() / 100.0);
-            System.out.println("+" + "-".repeat(185) + "+");
+            System.out.println("+" + "-".repeat(208) + "+");
         }
     }
 
@@ -793,14 +924,14 @@ public class Main {
 
         int columnWidth = 40;
 
-        printHorizontalLine(41 * 2 + 3);
+        printHorizontalLine();
         for (int i = 0; i < columnNames.length; i++) {
             System.out.printf("| %-" + columnWidth + "s | %-" + columnWidth + "s |\n", columnNames[i], values[i] == null ? "" : values[i]);
-            printHorizontalLine(41 * 2 + 3);
+            printHorizontalLine();
         }
     }
 
-    private static void printHorizontalLine(int width) {
-        System.out.println("+" + "-".repeat(width) + "+");
+    private static void printHorizontalLine() {
+        System.out.println("+" + "-".repeat(85) + "+");
     }
 }
